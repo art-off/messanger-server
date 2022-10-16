@@ -45,24 +45,28 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		switch message.Type {
-		case mes.TypeText:
-			if messageText, ok := message.Payload.(string); ok {
-				go sendMessageInRoom(messageText, connection)
-			} else {
-				connection.WriteJSON(&mes.Message{
-					Type:    mes.TypeError,
-					Payload: "InvalidMessage",
-				})
-			}
-		case mes.TypeRegister:
+		handleMessage(message, connection)
+	}
+}
+
+func handleMessage(m *mes.Message, connection *websocket.Conn) {
+	switch m.Type {
+	case mes.TypeText:
+		if messageText, ok := m.Payload.(string); ok {
+			go sendMessageInRoom(messageText, connection)
+		} else {
 			connection.WriteJSON(&mes.Message{
 				Type:    mes.TypeError,
-				Payload: "YouAlreadyRegistered",
+				Payload: "InvalidMessage",
 			})
 		}
-		// Если будут появляться еще типы сообщений от пользователь -- обработать
+	case mes.TypeRegister:
+		connection.WriteJSON(&mes.Message{
+			Type:    mes.TypeError,
+			Payload: "YouAlreadyRegistered",
+		})
 	}
+	// Если будут появляться еще типы сообщений от пользователь -- обработать
 }
 
 func sendMessageInRoom(message string, fromConn *websocket.Conn) {
